@@ -16,8 +16,10 @@ def upload_file():
     file.save(filepath)
 
     # 여기서 이미지 처리를 수행하고 JSON 응답을 반환합니다.
-    result = c_to_python(filepath)  
-    response = f'{result}'.replace('\"', '')
+    result = c_to_python(filepath)  # process_image는 당신의 이미지 처리 함수입니다.
+    response = f'{result}'.replace('\'', '')
+    response = response.replace('\"', '')
+    print(response)
     return response, 200
 
 if __name__ == '__main__':
