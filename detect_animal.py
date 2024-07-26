@@ -3,8 +3,8 @@ from msrest.authentication import ApiKeyCredentials
 from PIL import Image
 import numpy as np
 import io
-import sys
 import json
+import csv
 
 class ClassificationURL:
     def __init__(self, key, endpoint, id, model):
@@ -13,13 +13,8 @@ class ClassificationURL:
         self.project_id = id
         self.model_name = model
 
-        credentials = ApiKeyCredentials(in_headers={"Prediction-key": prediction_key})
-        self.predictor = CustomVisionPredictionClient(endpoint=prediction_endpoint, credentials=credentials)
-
-prediction_key = "cc4e7910294b4d3bb0cd9e59c9a1fe33"
-prediction_endpoint = "https://b021customvision-prediction.cognitiveservices.azure.com/"
-project_id = "46eb142e-665d-45dc-8942-41ab48c89225"
-model_name = "Iteration1"
+        credentials = ApiKeyCredentials(in_headers={"Prediction-key": self.prediction_key})
+        self.predictor = CustomVisionPredictionClient(endpoint=self.prediction_endpoint, credentials=credentials)
 
 dic_classification = {
     'tiger' : ClassificationURL(
@@ -31,8 +26,8 @@ dic_classification = {
     'panda' : ClassificationURL(
         'cc4e7910294b4d3bb0cd9e59c9a1fe33',
         'https://b021customvision-prediction.cognitiveservices.azure.com/',
-        '7feb636d-53d2-46c9-b3fe-6ee673b4c033',
-        'Iteration2'
+        '8791e920-0312-40f3-83ba-e650eeedf908',
+        'Iteration1'
     ),
     'zebra' : ClassificationURL(
         'cc4e7910294b4d3bb0cd9e59c9a1fe33',
@@ -42,11 +37,18 @@ dic_classification = {
     ) 
 }
 
-pass_probability = 0.8
-classfy_probability = 0.8
+prediction_key = "cc4e7910294b4d3bb0cd9e59c9a1fe33"
+prediction_endpoint = "https://b021customvision-prediction.cognitiveservices.azure.com/"
+project_id = "46eb142e-665d-45dc-8942-41ab48c89225"
+model_name = "Iteration2"
 
 credentials = ApiKeyCredentials(in_headers={"Prediction-key": prediction_key})
 predictor = CustomVisionPredictionClient(endpoint=prediction_endpoint, credentials=credentials)
+
+pass_probability = 0.8
+classfy_probability = 0.8
+
+db_path = 'DB_animal.csv'
 
 def ndarr_to_bytearr(nd_arr, format):
     byte_arr = io.BytesIO()
@@ -74,7 +76,7 @@ def split_detect_image(image, predict_results):
     return detect_name, detections
 
 def animal_classify(names, detect_imgs, img_format):
-    if names.count == 0:
+    if len(names) == 0:
         return names
     
     url_info = dic_classification.get(names[0])
@@ -97,10 +99,28 @@ def animal_detect(image):
     names = animal_classify(tags, detections, image.format)
     return names
 
+def get_animal_info(name):
+    info = ''
+    with open(db_path, 'r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row['ID'] == name:
+                info = f"{row['ID']},{row['species']},{row['name']},{row['birthday']},{row['attribute']},{row['info']}"
+                break
+    return info
+
 def c_to_python(dir):
     test_img = Image.open(dir)
     detect_img = animal_detect(test_img)
-    return json.dumps(detect_img)
+    if len(detect_img):
+        print('fail to detect')
+
+    infos = []
+    for name in detect_img:
+        print('name: ', name)
+        infos.append(get_animal_info(name))
+
+    return infos
 
 # if __name__=='__main__':
 #     c_to_python(sys.argv[1])
